@@ -1,0 +1,53 @@
+说明
+---
+
+这一套工具用来生成Licence，包含三个小程序lkey、lmake和llib，其中lkey用来生成密钥，采用RSA算法。注意，本程序能够运行需要安装php的openssl扩展。lmake用来生成licence文件，生成licence需要私钥，私钥由厂商保管，不可以公开。llib用来解析licence文件，并验证licence是否过期或者其它限制。
+
+lkey
+----
+php lkey.php -o {outdir}
+
+* -o 密钥存放路径，会生成{outdir}/pri和{outdir}/pub文件，一个是私钥另外一个是公钥。默认值是default。
+
+例如：
+  
+  php lkey.php -o langwan
+
+lmake
+-----
+
+php lmake.php -k {keyfile} -d {datafile} -o {licencefile}
+
+* -k 私钥文件的位置，默认为default/pri。
+* -d 数据文件，包含过期时间，授权给那个公司，ip地址等，默认是default/data.php（php数组形式），参看default目录。
+* -o licence文件生成位置，默认值default/licence.dat。
+
+例如：
+
+  php lmake.php -k langwan/pri -d langwan/data.php -o langwan/licence.dat
+
+llib
+----
+
+使用方法：
+
+  <?php
+  
+  $licence = new Langwan_Licence_Lib(file_get_contents("default/pub"), file_get_contents("default/licence.dat"), new Langwan_Licence_Checker_Default());
+  $ret = $licence->check();
+  var_dump($ret);
+
+* kfile 公钥的数据，你可以存在文件里，也可以存在redis等容器里，这里只需要数据。
+* lfile licence数据，同kfile，只需要数据。
+* checker 用来判断licence是否有效的过程，默认只判断expires（过期时间），如果你有更多的限制，请自己实现CXF_Licence_Checker接口。
+
+data.php
+--------
+
+模板：
+
+  <?php
+
+  return array('expires' => '2014-04-14 00:00:00', 'title' => 'BJ GAME CENTER', 'ip' => '202.107.0.1');
+
+> 当日期比当前时间小，返回结果为false，时间比当前日期大返回结果为true。
